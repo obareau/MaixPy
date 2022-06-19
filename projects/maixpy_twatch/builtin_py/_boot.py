@@ -20,7 +20,7 @@ else:
 
 
 print("[MaixPy] init end") # for IDE
-for i in range(200):
+for _ in range(200):
     time.sleep_ms(1) # wait for key interrupt(for maixpy ide)
 
 
@@ -74,10 +74,7 @@ dirList = os.listdir()
 
 
 # detect boot.py
-if "boot.py" in dirList:
-    with open("boot.py") as f:
-        exec(f.read())
-else:
+if "boot.py" not in dirList:
     # detect boot.py
     boot_py = '''
 try:
@@ -106,10 +103,8 @@ finally:
     with open('boot.py', "wb") as f:
         f.write(boot_py)
 
-    with open("boot.py") as f:
-        exec(f.read())
-
-
+with open("boot.py") as f:
+    exec(f.read())
 ## detect config.json
 config = {
     "type": "twatch",

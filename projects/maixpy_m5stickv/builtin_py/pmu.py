@@ -17,37 +17,37 @@ def __chkPwrKeyWaitForSleep__(timer):
     pek_stu = (__pmuI2CDEV__.readfrom(52, 1))[0]
     __pmuI2CDEV__.writeto_mem(52, 0x46, 0xFF, mem_size=8) #Clear IRQ
 
-    #Prevent loop in restart, wait for release
-    if __preButPressed__ == -1 and ((pek_stu & (0x01 << 1)) or (pek_stu & 0x01)):
-        return
-    
-    if __preButPressed__ == -1 and  ((pek_stu & (0x01 << 1)) == False and (pek_stu & 0x01) == False):
-        __preButPressed__ = 0
+    if __preButPressed__ == -1:
+        if ((pek_stu & (0x01 << 1)) or (pek_stu & 0x01)):
+            return
+
+        if ((pek_stu & (0x01 << 1)) == False and (pek_stu & 0x01) == False):
+            __preButPressed__ = 0
 
     if (pek_stu & 0x01):
         __pmuI2CDEV__.writeto_mem(52, 0x31, 0x0F, mem_size=8)  #Enable Sleep Mode
         __pmuI2CDEV__.writeto_mem(52, 0x91, 0x00, mem_size=8)  #Turn off GPIO0/LDO0
         __pmuI2CDEV__.writeto_mem(52, 0x12, 0x00, mem_size=8)  #Turn off other power source
-    
+
     if (pek_stu & (0x01 << 1)):
         machine.reset()
 
 class axp192:
     def __init__(self, i2cDev=None):
-        if i2cDev == None:
+        if i2cDev is None:
             try:
                 self.i2cDev = I2C(I2C.I2C0, freq=400000, scl=28, sda=29)
             except:
                 raise PMUError("Unable to init I2C0 as Master")
         else:
             self.i2cDev = i2cDev
-        
+
         self.axp192Addr = 52
 
         global __pmuI2CDEV__, __preButPressed__
         __pmuI2CDEV__ = self.i2cDev
         __preButPressed__ = -1
-        
+
         scanList = self.i2cDev.scan()
         if self.axp192Addr not in scanList:
             raise NotFoundError
@@ -172,10 +172,7 @@ class axp192:
         if (but_stu & (0x1 << 1)):
             return 1
         else:
-            if (but_stu & (0x1 << 0)):
-                return 2
-            else:
-                return -1
+            return 2 if (but_stu & (0x1 << 0)) else -1
     
     def setEnterSleepMode(self):
         self.__writeReg(0x31, 0x0F)  #Enable Sleep Mode

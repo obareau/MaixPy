@@ -6,30 +6,30 @@ class fm:
   def help():
     __class__.fpioa.help()
 
-  def get_pin_by_function(function):
-    return __class__.fpioa.get_Pin_num(function)
+  def get_pin_by_function(self):
+    return __class__.fpioa.get_Pin_num(self)
 
-  def register(pin, function, force=True):
+  def register(self, function, force=True):
     pin_used = __class__.get_pin_by_function(function)
-    if pin_used == pin:
-      return 
-    if None != pin_used:
+    if pin_used == self:
+      return
+    if pin_used != None:
       info = "[Warning] function is used by %s(pin:%d)" % (
           fm.str_function(function), pin_used)
       if force == False:
         raise Exception(info)
       else:
         print(info)
-    __class__.fpioa.set_function(pin, function)
+    __class__.fpioa.set_function(self, function)
 
-  def unregister(pin):
-    __class__.fpioa.set_function(pin, fm.fpioa.RESV0)
+  def unregister(self):
+    __class__.fpioa.set_function(self, fm.fpioa.RESV0)
 
-  def str_function(function):
-    if fm.fpioa.GPIOHS0 <= function and function <= fm.fpioa.GPIO7:
-      if fm.fpioa.GPIO0 <= function:
-        return 'fm.fpioa.GPIO%d' % (function - fm.fpioa.GPIO0)
-      return 'fm.fpioa.GPIOHS%d' % (function - fm.fpioa.GPIOHS0)
+  def str_function(self):
+    if fm.fpioa.GPIOHS0 <= self <= fm.fpioa.GPIO7:
+      if fm.fpioa.GPIO0 <= self:
+        return 'fm.fpioa.GPIO%d' % (self - fm.fpioa.GPIO0)
+      return 'fm.fpioa.GPIOHS%d' % (self - fm.fpioa.GPIOHS0)
     return 'unknown'
 
   def get_gpio_used():
