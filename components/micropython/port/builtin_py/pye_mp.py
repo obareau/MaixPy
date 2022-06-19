@@ -150,7 +150,7 @@ class Editor:
             except ImportError:
                 pass
     def goto(self, row, col):
-        self.wr("\x1b[{};{}H".format(row + 1, col + 1))
+        self.wr(f"\x1b[{row + 1};{col + 1}H")
     def clear_to_eol(self):
         self.wr("\x1b[0K")
     def cursor(self, onoff):
@@ -165,7 +165,7 @@ class Editor:
     def mouse_reporting(self, onoff):
         self.wr('\x1b[?9h' if onoff else '\x1b[?9l')
     def scroll_region(self, stop):
-        self.wr('\x1b[1;{}r'.format(stop) if stop else '\x1b[r')
+        self.wr(f'\x1b[1;{stop}r' if stop else '\x1b[r')
     def scroll_up(self, scrolling):
         Editor.scrbuf[scrolling:] = Editor.scrbuf[:-scrolling]
         Editor.scrbuf[:scrolling] = [''] * scrolling
@@ -198,7 +198,7 @@ class Editor:
         if is_micropython:
             gc.collect()
             if flag:
-                self.message += "{} Bytes Memory available".format(gc.mem_free())
+                self.message += f"{gc.mem_free()} Bytes Memory available"
     def get_input(self):
         while True:
             in_buffer = self.rd()
@@ -212,16 +212,15 @@ class Editor:
                 c = self.KEYMAP[in_buffer]
                 if c != KEY_MOUSE:
                     return c, ""
+                mouse_fct = ord((self.rd()))
+                mouse_x = ord(self.rd()) - 33
+                mouse_y = ord(self.rd()) - 33
+                if mouse_fct == 0x60:
+                    return KEY_SCRLUP, ""
+                elif mouse_fct == 0x61:
+                    return KEY_SCRLDN, ""
                 else:
-                    mouse_fct = ord((self.rd()))
-                    mouse_x = ord(self.rd()) - 33
-                    mouse_y = ord(self.rd()) - 33
-                    if mouse_fct == 0x61:
-                        return KEY_SCRLDN, ""
-                    elif mouse_fct == 0x60:
-                        return KEY_SCRLUP, ""
-                    else:
-                        return KEY_MOUSE, [mouse_x, mouse_y, mouse_fct]
+                    return KEY_MOUSE, [mouse_x, mouse_y, mouse_fct]
             elif ord(in_buffer[0]) >= 32:
                 return KEY_NONE, in_buffer
     def display_window(self):
@@ -259,9 +258,12 @@ class Editor:
                 i += 1
         self.goto(Editor.height, 0)
         self.hilite(1)
-        self.wr("{}{} Row: {}/{} Col: {}  {}".format(
-            self.changed, self.fname, self.cur_line + 1, self.total_lines,
-            self.col + 1, self.message)[:self.width - 1])
+        self.wr(
+            f"{self.changed}{self.fname} Row: {self.cur_line + 1}/{self.total_lines} Col: {self.col + 1}  {self.message}"[
+                : self.width - 1
+            ]
+        )
+
         self.clear_to_eol()
         self.hilite(0)
         self.goto(self.row, self.col - self.margin)
@@ -312,13 +314,13 @@ class Editor:
             elif key == KEY_DELETE:
                 if pos < len(res):
                     res = res[:pos] + res[pos+1:]
-                    push_msg(res[pos:] + ' ')
+                    push_msg(f'{res[pos:]} ')
             elif key == KEY_BACKSPACE:
                 if pos > 0:
                     res = res[:pos-1] + res[pos:]
                     self.wr("\b")
                     pos -= 1
-                    push_msg(res[pos:] + ' ')
+                    push_msg(f'{res[pos:]} ')
             elif key == KEY_ZAP:
                 char = self.getsymbol(self.content[self.cur_line], self.col, zap)
                 if char is not None:
@@ -327,16 +329,15 @@ class Editor:
                     self.wr(res)
                     pos = len(res)
     def getsymbol(self, s, pos, zap):
-        if pos < len(s) and zap is not None:
-            issymbol = lambda c: c.isalpha() or c.isdigit() or c in zap
-            start = stop = pos
-            while start >= 0 and issymbol(s[start]):
-                start -= 1
-            while stop < len(s) and issymbol(s[stop]):
-                stop += 1
-            return s[start+1:stop]
-        else:
+        if pos >= len(s) or zap is None:
             return None
+        issymbol = lambda c: c.isalpha() or c.isdigit() or c in zap
+        start = stop = pos
+        while start >= 0 and issymbol(s[start]):
+            start -= 1
+        while stop < len(s) and issymbol(s[stop]):
+            stop += 1
+        return s[start+1:stop]
     def find_in_file(self, pattern, col, end):
         Editor.find_pattern = pattern
         if Editor.case != "y":
@@ -344,7 +345,7 @@ class Editor:
         try:
             rex = re_compile(pattern)
         except:
-            self.message = "Invalid pattern: " + pattern
+            self.message = f"Invalid pattern: {pattern}"
             return None
         start = self.cur_line
         if (col > len(self.content[start]) or
@@ -354,8 +355,7 @@ class Editor:
             l = self.content[line][col:]
             if Editor.case != "y":
                 l = l.lower()
-            match = rex.search(l)
-            if match:
+            if match := rex.search(l):
                 self.cur_line = line
                 if pattern[-1:] == "$" and match.group(0)[-1:] != "$":
                     self.col = col + len(l) - len(match.group(0))
@@ -363,9 +363,8 @@ class Editor:
                     self.col = col + l.find(match.group(0))
                 return len(match.group(0))
             col = 0
-        else:
-            self.message = pattern + " not found (again)"
-            return None
+        self.message = f"{pattern} not found (again)"
+        return None
     def undo_add(self, lnum, text, key, span = 1):
         self.changed = '*'
         if self.undo_limit > 0 and (

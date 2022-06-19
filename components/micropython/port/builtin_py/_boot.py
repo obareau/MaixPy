@@ -93,10 +93,9 @@ finally:
 '''
 
 flash_ls = os.listdir()
-if not "main.py" in flash_ls:
-    f = open("main.py", "wb")
-    f.write(main_py)
-    f.close()
+if "main.py" not in flash_ls:
+    with open("main.py", "wb") as f:
+        f.write(main_py)
     del f
 del main_py
 

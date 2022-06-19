@@ -76,9 +76,9 @@ class PCF8563:
         """Initialization needs to be given an initialized I2C port
         """
         self.i2c = i2c
-        self.address = address if address else PCF8563_SLAVE_ADDRESS
+        self.address = address or PCF8563_SLAVE_ADDRESS
         self.buffer = bytearray(16)
-        self.bytebuf = memoryview(self.buffer[0:1])
+        self.bytebuf = memoryview(self.buffer[:1])
 
     def __write_byte(self, reg, val):
         # self.bytebuf[0] = val
@@ -254,35 +254,35 @@ class PCF8563:
         if minutes is None:
             minutes = PCF8563_ALARM_ENABLE
             self.__write_byte(PCF8563_ALARM_MINUTES, minutes)
+        elif minutes < 0 or minutes > 59:
+            raise ValueError('Minutes is out of range [0,59].')
         else:
-            if minutes < 0 or minutes > 59:
-                raise ValueError('Minutes is out of range [0,59].')
             self.__write_byte(PCF8563_ALARM_MINUTES,
                             self.__dec2bcd(minutes) & 0x7f)
 
         if hours is None:
             hours = PCF8563_ALARM_ENABLE
             self.__write_byte(PCF8563_ALARM_HOURS, hours)
+        elif hours < 0 or hours > 23:
+            raise ValueError('Hours is out of range [0,23].')
         else:
-            if hours < 0 or hours > 23:
-                raise ValueError('Hours is out of range [0,23].')
             self.__write_byte(PCF8563_ALARM_HOURS, self.__dec2bcd(
                 hours) & 0x7f)
 
         if date is None:
             date = PCF8563_ALARM_ENABLE
             self.__write_byte(PCF8563_ALARM_DAY, date)
+        elif date < 1 or date > 31:
+            raise ValueError('date is out of range [1,31].')
         else:
-            if date < 1 or date > 31:
-                raise ValueError('date is out of range [1,31].')
             self.__write_byte(PCF8563_ALARM_DAY, self.__dec2bcd(
                 date) & 0x7f)
 
         if weekday is None:
             weekday = PCF8563_ALARM_ENABLE
             self.__write_byte(PCF8563_ALARM_WEEKDAY, weekday)
+        elif weekday < 0 or weekday > 6:
+            raise ValueError('weekday is out of range [0,6].')
         else:
-            if weekday < 0 or weekday > 6:
-                raise ValueError('weekday is out of range [0,6].')
             self.__write_byte(PCF8563_ALARM_WEEKDAY, self.__dec2bcd(
                 weekday) & 0x7f)

@@ -43,12 +43,12 @@ class PMU(object):
     def __init__(self, i2c=None, address=None, chip=None):
         self.bus = i2c
         self.chip = chip if chip is not None else default_chip_type
-        self.address = address if address else default_dev_address
+        self.address = address or default_dev_address
 
         self.buffer = bytearray(16)
-        self.bytebuf = memoryview(self.buffer[0:1])
-        self.wordbuf = memoryview(self.buffer[0:2])
-        self.irqbuf = memoryview(self.buffer[0:5])
+        self.bytebuf = memoryview(self.buffer[:1])
+        self.wordbuf = memoryview(self.buffer[:2])
+        self.irqbuf = memoryview(self.buffer[:5])
 
         self.init_device()
 
@@ -174,15 +174,17 @@ class PMU(object):
         return data
 
     def getBattDischargeCurrent(self):
-        data = self.__get_h8_l4(
-            AXP202_BAT_AVERDISCHGCUR_H8, AXP202_BAT_AVERDISCHGCUR_L5) * AXP202_BATT_DISCHARGE_CUR_STEP
-        return data
+        return (
+            self.__get_h8_l4(
+                AXP202_BAT_AVERDISCHGCUR_H8, AXP202_BAT_AVERDISCHGCUR_L5
+            )
+            * AXP202_BATT_DISCHARGE_CUR_STEP
+        )
 
     def getSysIPSOUTVoltage(self):
         hv = self.read_byte(AXP202_APS_AVERVOL_H8)
         lv = self.read_byte(AXP202_APS_AVERVOL_L4)
-        data = (hv << 4) | (lv & 0xF)
-        return data
+        return (hv << 4) | (lv & 0xF)
 
     def enableADC(self, ch, val):
         if(ch == 1):
@@ -249,7 +251,6 @@ class PMU(object):
             data = self.read_byte(AXP202_INTEN4)
             data = data & (~(val >> 24))
             self.write_byte(AXP202_INTEN4, data)
-        pass
 
     def readIRQ(self):
         if(self.chip == AXP202_CHIP_ID):
@@ -311,7 +312,7 @@ class PMU(object):
         # self.write_byte(AXP202_LDO24OUT_VOL, int(val))
         prev = self.read_byte(AXP202_LDO24OUT_VOL)
         prev &= 0x0F
-        prev = prev | (int(val) << 4)
+        prev |= int(val) << 4
         self.write_byte(AXP202_LDO24OUT_VOL, (prev))
 
     def setLDO3Voltage(self, mv):
@@ -322,7 +323,7 @@ class PMU(object):
         val = (mv - 700) / 25
         prev = self.read_byte(AXP202_LDO3OUT_VOL)
         prev &= 0x80
-        prev = prev | int(val)
+        prev |= int(val)
         self.write_byte(AXP202_LDO3OUT_VOL, (prev))
         self.write_byte(AXP202_LDO3OUT_VOL, int(val))
 
@@ -336,10 +337,7 @@ class PMU(object):
         if(mode > AXP202_LDO3_DCIN_MODE):
             return
         data = self.read_byte(AXP202_LDO3OUT_VOL)
-        if(mode):
-            data = data | self.__BIT_MASK(7)
-        else:
-            data = data & (~self.__BIT_MASK(7))
+        data = data | self.__BIT_MASK(7) if mode else data & (~self.__BIT_MASK(7))
         self.write_byte(AXP202_LDO3OUT_VOL, data)
 
     def setStartupTime(self, val):
@@ -383,10 +381,7 @@ class PMU(object):
 
     def setTimeOutShutdown(self, en):
         data = self.read_byte(AXP202_POK_SET)
-        if(en):
-            data = data | self.__BIT_MASK(3)
-        else:
-            data = data | (~self.__BIT_MASK(3))
+        data = data | self.__BIT_MASK(3) if en else data | (~self.__BIT_MASK(3))
         self.write_byte(AXP202_POK_SET, data)
 
     def shutdown(self):
@@ -397,8 +392,7 @@ class PMU(object):
     def getSettingChargeCurrent(self):
         data = self.read_byte(AXP202_CHARGE1)
         data = data & 0b00000111
-        curr = 300 + data * 100
-        return curr
+        return 300 + data * 100
 
     def isChargeingEnable(self):
         data = self.read_byte(AXP202_CHARGE1)
@@ -426,8 +420,7 @@ class PMU(object):
 
     def getBattPercentage(self):
         data = self.read_byte(AXP202_BATT_PERCENTAGE)
-        mask = data & self.__BIT_MASK(7)
-        if(mask):
+        if mask := data & self.__BIT_MASK(7):
             return 0
         return data & (~self.__BIT_MASK(7))
 

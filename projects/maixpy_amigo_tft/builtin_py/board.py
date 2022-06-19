@@ -1,13 +1,13 @@
 
 class board_info:
-  def set(key, value=None):
-    return setattr(__class__, key, value)
+  def set(self, value=None):
+    return setattr(__class__, self, value)
   def all():
     return dir(__class__)
   def get():
     return getattr(__class__, key)
-  def load(__map__={}):
-    for k, v in __map__.items():
+  def load(self):
+    for k, v in self.items():
       __class__.set(k, v)
 
 from Maix import config
